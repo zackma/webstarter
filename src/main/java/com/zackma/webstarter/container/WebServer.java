@@ -39,14 +39,14 @@ public class WebServer {
         tomcat.setPort(port);
         //关闭自动部署
         tomcat.getHost().setAutoDeploy(false);
-        //创建应用容器(传入应用容器访问路径和实际项目代码路径,从main下面开始读取保证能读到静态资源文件)
+        //创建应用容器(传入应用容器访问路径和实际项目代码路径,从main下面开始读取保证能读到静态资源文件),即加载ServletContext部分
         StandardContext ctx = (StandardContext) tomcat.addWebapp(CTXPATH,new File(DOCBASE).getAbsolutePath());
         //禁止重新加载
         ctx.setReloadable(false);
         //添加容器监听
         ctx.addLifecycleListener(new Tomcat.FixContextListener());
 
-        //创建springmvc应用classes文件读取地址
+        //创建springmvc应用classes文件读取地址，加载WebApplicationContext部分
         File classes = new File(CLZPATH);
         //创建WebRoot
         WebResourceRoot webRoot = new StandardRoot(ctx);
