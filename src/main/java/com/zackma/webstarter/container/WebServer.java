@@ -1,6 +1,5 @@
 package com.zackma.webstarter.container;
 
-import org.apache.catalina.LifecycleException;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
@@ -14,29 +13,19 @@ import java.io.File;
  * Embed Tomcat加载和启动应用
  * （SpringBoot内置Tomcat启动应用原理）
  */
-public class WebServer {
-    private static final int DEFAULT_PORT = 8080;
-    private static final String DOCBASE = "src/main";//项目代码路径
-    private static final String CTXPATH = "/";//应用容器访问路径
-    private static final String PRECOMP_PATH = "/WEB-INF/classes";//tomcat预编译类文件路径
-    private static final String CLZPATH = "target/classes";//项目编译后路径
+public class WebServer implements AppServer{
 
     /**
-     * 封装启动方法，
+     * 发布应用到Tomcat并返回应用发布Tomcat后实例：
      * 分别初始化tomcat,
      * 应用容器context
      * 和类文件预编译路径webRoot
-     * @param port
+     * @return
      * @throws ServletException
-     * @throws LifecycleException
      */
-    public static void run(int port) throws ServletException, LifecycleException {
+    private static Tomcat deployAppOnTomcat() throws ServletException{
+
         Tomcat tomcat = new Tomcat();
-        //设置端口
-        if(port<1||port>65535){
-            tomcat.setPort(DEFAULT_PORT);
-        }
-        tomcat.setPort(port);
         //关闭自动部署
         tomcat.getHost().setAutoDeploy(false);
         //创建应用容器(传入应用容器访问路径和实际项目代码路径,从main下面开始读取保证能读到静态资源文件),即加载ServletContext部分
@@ -53,41 +42,48 @@ public class WebServer {
         //添加WebRoot类文件
         webRoot.addPreResources(new DirResourceSet(webRoot,PRECOMP_PATH,classes.getAbsolutePath(),CTXPATH));
 
+        return tomcat;
+    }
+
+
+    /**
+     * 无参启动方法
+     * @throws Exception
+     */
+    @Override
+    public void run() throws Exception{
+        Tomcat tomcat = WebServer.deployAppOnTomcat();
+        //设置端口
+        tomcat.setPort(DEFAULT_PORT);
+
+        tomcat.start();
+        tomcat.getServer().await();
+    }
+
+    /**
+     * 带参启动方法，暂定端口号自定义
+     * @param port
+     * @throws Exception
+     */
+    @Override
+    public void run(int port) throws Exception{
+        Tomcat tomcat = WebServer.deployAppOnTomcat();
+        if(port<1||port>65535){
+            tomcat.setPort(DEFAULT_PORT);
+        }
+        tomcat.setPort(port);
+
         tomcat.start();
         tomcat.getServer().await();
     }
 
     public static void main(String... args){
         try {
-            WebServer.run(9080);
-        } catch (ServletException e) {
-            e.printStackTrace();
-        } catch (LifecycleException e) {
+            WebServer webServer = new WebServer();
+            webServer.run(9080);
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    /**
-     * 以下方法用于加载和配置servlet应用
-     */
-//    private static final int port = 9080;
-//    private static final String docBase = "e:/codes/webstart";
-//    public static void main(String... args) throws LifecycleException {
-//        Tomcat server = new Tomcat();
-//        server.setPort(port);
-//        server.setBaseDir(docBase);
-//        server.getHost().setAutoDeploy(false);
-//
-//        String ctxPath = "/";
-//        StandardContext context = new StandardContext();
-//        context.setPath(ctxPath);
-//        context.addLifecycleListener(new Tomcat.FixContextListener());
-//
-//        server.getHost().addChild(context);
-//        server.addServlet(ctxPath,"tempServlet",new TempServlet());
-//        context.addServletMappingDecoded("/temp","tempServlet");
-//
-//        server.start();
-//        server.getServer().await();
-//    }
 }
